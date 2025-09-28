@@ -3,6 +3,7 @@ class MasonryLayout {
   originalItems;
   defaultCols = 2;
   sortByHeight;
+  horizontalOrder;
   breakpointCols;
   columnCount;
   resizeHandler;
@@ -13,6 +14,7 @@ class MasonryLayout {
     this.originalItems = Array.from(container.children);
     this.defaultCols = 2;
     this.sortByHeight = container.dataset.sortByHeight === "true";
+    this.horizontalOrder = container.dataset.horizontalOrder === "true";
     this.debug = container.dataset.debug === "true";
 
     // Parse the `breakpointCols` from the dataset
@@ -66,7 +68,7 @@ class MasonryLayout {
       });
     }
 
-    // Distribute items based on sortByHeight
+    // Distribute items based on sortByHeight or horizontalOrder
     if (this.sortByHeight) {
       this.originalItems.forEach((item) => {
         const columnWithLeastHeight = columns.reduce((shortest, current) => {
@@ -75,6 +77,17 @@ class MasonryLayout {
             : shortest;
         }, columns[0]);
         columnWithLeastHeight.appendChild(item);
+      });
+    } else if (this.horizontalOrder) {
+      // For horizontal order, fill columns evenly by distributing items sequentially
+      // This maintains the original order while balancing column heights
+      this.originalItems.forEach((item, index) => {
+        const columnWithFewestItems = columns.reduce((shortest, current) => {
+          return current.children.length < shortest.children.length
+            ? current
+            : shortest;
+        }, columns[0]);
+        columnWithFewestItems.appendChild(item);
       });
     } else {
       this.originalItems.forEach((item, index) => {

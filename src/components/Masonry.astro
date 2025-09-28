@@ -4,6 +4,7 @@ interface Props {
   class?: string;
   columnClass?: string;
   sortByHeight?: boolean;
+  horizontalOrder?: boolean;
   debug?: boolean;
 }
 
@@ -12,6 +13,7 @@ const {
   class: className = "astro-masonry-grid",
   columnClass = "astro-masonry-grid_column",
   sortByHeight = false,
+  horizontalOrder = false,
   debug = false,
 } = Astro.props;
 
@@ -55,6 +57,7 @@ const breakpointColsString =
   data-masonry-container
   data-column-class={columnClass}
   data-sort-by-height={sortByHeight.toString()}
+  data-horizontal-order={horizontalOrder.toString()}
   data-debug={debug.toString()}
 >
   <slot />
