@@ -2,20 +2,18 @@ class MasonryLayout {
   container;
   originalItems;
   defaultCols = 2;
-  sortByHeight;
-  horizontalOrder;
   breakpointCols;
   columnCount;
   resizeHandler;
-  debug;
+  masonryOptions = {};
 
   constructor(container) {
     this.container = container;
     this.originalItems = Array.from(container.children);
     this.defaultCols = 2;
-    this.sortByHeight = container.dataset.sortByHeight === "true";
-    this.horizontalOrder = container.dataset.horizontalOrder === "true";
-    this.debug = container.dataset.debug === "true";
+
+    // Parse all data-masonry-* attributes into options object
+    this.masonryOptions = this.parseMasonryOptions(container);
 
     // Parse the `breakpointCols` from the dataset
     const breakpointColsAttr = container.dataset.breakpointCols;
@@ -30,16 +28,48 @@ class MasonryLayout {
       this.breakpointCols = { default: this.defaultCols }; // Fallback
     }
 
-    if (this.debug) {
+    if (this.masonryOptions.debug) {
       console.log("Parsed breakpointCols:", this.breakpointCols);
+      console.log("Masonry options:", this.masonryOptions);
     }
-      
+
     this.columnCount = this.calculateColumnCount();
 
     this.resizeHandler = throttle(this.handleResize.bind(this), 200);
     window.addEventListener("resize", this.resizeHandler);
 
     requestAnimationFrame(() => this.createLayout());
+  }
+
+  parseMasonryOptions(container) {
+    const options = {};
+
+    // Extract all data-masonry-* attributes
+    for (const attr of container.attributes) {
+      if (attr.name.startsWith('data-masonry-')) {
+        // Convert kebab-case back to camelCase
+        const optionName = attr.name
+          .replace('data-masonry-', '')
+          .replace(/-([a-z])/g, (match, letter) => letter.toUpperCase());
+
+        // Parse the value
+        let value = attr.value;
+        if (value === 'true') value = true;
+        else if (value === 'false') value = false;
+        else if (!isNaN(value) && !isNaN(parseFloat(value))) value = parseFloat(value);
+        else if (value.startsWith('{') || value.startsWith('[')) {
+          try {
+            value = JSON.parse(value);
+          } catch (e) {
+            // Keep as string if JSON parse fails
+          }
+        }
+
+        options[optionName] = value;
+      }
+    }
+
+    return options;
   }
 
   createLayout() {
@@ -68,8 +98,8 @@ class MasonryLayout {
       });
     }
 
-    // Distribute items based on sortByHeight or horizontalOrder
-    if (this.sortByHeight) {
+    // Distribute items based on masonry options
+    if (this.masonryOptions.sortByHeight) {
       this.originalItems.forEach((item) => {
         const columnWithLeastHeight = columns.reduce((shortest, current) => {
           return current.offsetHeight < shortest.offsetHeight
@@ -78,7 +108,7 @@ class MasonryLayout {
         }, columns[0]);
         columnWithLeastHeight.appendChild(item);
       });
-    } else if (this.horizontalOrder) {
+    } else if (this.masonryOptions.horizontalOrder) {
       // For horizontal order, fill columns evenly by distributing items sequentially
       // This maintains the original order while balancing column heights
       this.originalItems.forEach((item, index) => {
@@ -112,7 +142,7 @@ class MasonryLayout {
       for (const breakpoint of breakpoints) {
         if (windowWidth <= breakpoint) {
           matchedBreakpoint = this.breakpointCols[breakpoint];
-          if (this.debug) {
+          if (this.masonryOptions.debug) {
             console.log(
               `Matched breakpoint: ${breakpoint}px -> ${matchedBreakpoint} columns`
             );
@@ -130,7 +160,7 @@ class MasonryLayout {
     const newColumnCount = this.calculateColumnCount();
 
     if (newColumnCount !== this.columnCount) {
-      if (this.debug) {
+      if (this.masonryOptions.debug) {
         console.log(
           "Resizing: Changing column count from",
           this.columnCount,

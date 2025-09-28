@@ -3,24 +3,32 @@ interface Props {
   breakpointCols?: number | Record<number | "default", number>;
   class?: string;
   columnClass?: string;
-  sortByHeight?: boolean;
-  horizontalOrder?: boolean;
-  debug?: boolean;
+  // All other props are passed through as Masonry.js options
+  [key: string]: any;
 }
 
 const {
   breakpointCols = 2,
   class: className = "astro-masonry-grid",
   columnClass = "astro-masonry-grid_column",
-  sortByHeight = false,
-  horizontalOrder = false,
-  debug = false,
+  ...masonryOptions
 } = Astro.props;
 
 const breakpointColsString =
   typeof breakpointCols === "object"
     ? JSON.stringify(breakpointCols)
     : breakpointCols.toString();
+
+// Convert all masonry options to data attributes for passing to JS
+const masonryDataAttributes: Record<string, string> = {};
+for (const [key, value] of Object.entries(masonryOptions)) {
+  if (value !== undefined && value !== null) {
+    // Convert camelCase to kebab-case for data attributes
+    const dataKey = key.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`);
+    masonryDataAttributes[`data-masonry-${dataKey}`] =
+      typeof value === 'object' ? JSON.stringify(value) : String(value);
+  }
+}
 ---
 
 <style is:global>
@@ -56,9 +64,7 @@ const breakpointColsString =
   data-breakpoint-cols={breakpointColsString}
   data-masonry-container
   data-column-class={columnClass}
-  data-sort-by-height={sortByHeight.toString()}
-  data-horizontal-order={horizontalOrder.toString()}
-  data-debug={debug.toString()}
+  {...masonryDataAttributes}
 >
   <slot />
 </div>
